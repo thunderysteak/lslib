@@ -147,8 +147,8 @@ namespace Divine.CLI
             {
                 filter = obj => true;
             }
-
-            switch (args.Action)
+            
+	        switch (args.Action)
             {
                 case "create-package":
                 {
