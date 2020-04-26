@@ -68,128 +68,142 @@ namespace ConverterApp
 
         private void extractPackageBtn_Click(object sender, EventArgs e)
         {
-            extractPackageBtn.Enabled = false;
-            _displayTimer = null;
-            try
+            if (String.IsNullOrEmpty(extractPackagePath.Text) || String.IsNullOrEmpty(extractionPath.Text))
             {
-                var packager = new Packager();
-                packager.ProgressUpdate += PackageProgressUpdate;
-                packager.UncompressPackage(extractPackagePath.Text, extractionPath.Text);
-                MessageBox.Show("Package extracted successfully.");
+                MessageBox.Show("Please specify both Package and Destination paths first!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
-            catch (NotAPackageException)
+            else
             {
-                MessageBox.Show($"The specified package ({extractPackagePath.Text}) is not an Original Sin package or savegame archive.", "Extraction Failed", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }
-            catch (Exception exc)
-            {
-                MessageBox.Show($"Internal error!{Environment.NewLine}{Environment.NewLine}{exc}", "Extraction Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            finally
-            {
-                packageProgressLabel.Text = "";
-                packageProgress.Value = 0;
-                extractPackageBtn.Enabled = true;
+                extractPackageBtn.Enabled = false;
+                _displayTimer = null;
+                try
+                {
+                    var packager = new Packager();
+                    packager.ProgressUpdate += PackageProgressUpdate;
+                    packager.UncompressPackage(extractPackagePath.Text, extractionPath.Text);
+                    MessageBox.Show("Package extracted successfully.");
+                }
+                catch (NotAPackageException)
+                {
+                    MessageBox.Show($"The specified package ({extractPackagePath.Text}) is not an Original Sin package or savegame archive.", "Extraction Failed", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+                catch (Exception exc)
+                {
+                    MessageBox.Show($"Internal error!{Environment.NewLine}{Environment.NewLine}{exc}", "Extraction Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                finally
+                {
+                    packageProgressLabel.Text = "";
+                    packageProgress.Value = 0;
+                    extractPackageBtn.Enabled = true;
+                }
             }
         }
 
         private void createPackageBtn_Click(object sender, EventArgs e)
         {
-            createPackageBtn.Enabled = false;
-            _displayTimer = null;
-
-            try
+            if (String.IsNullOrEmpty(createSrcPath.Text) || String.IsNullOrEmpty(createPackagePath.Text))
             {
-                var options = new PackageCreationOptions();
-                switch (packageVersion.SelectedIndex)
+                MessageBox.Show("Please specify both Package and Destination paths first!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+            else
+            {
+                createPackageBtn.Enabled = false;
+                _displayTimer = null;
+
+                try
                 {
-                    case 0:
-                    case 1:
+                    var options = new PackageCreationOptions();
+                    switch (packageVersion.SelectedIndex)
                     {
-                        options.Version = PackageVersion.V13;
-                        break;
+                        case 0:
+                        case 1:
+                            {
+                                options.Version = PackageVersion.V13;
+                                break;
+                            }
+                        case 2:
+                            {
+                                options.Version = PackageVersion.V10;
+                                break;
+                            }
+                        case 3:
+                            {
+                                options.Version = PackageVersion.V9;
+                                break;
+                            }
+                        case 4:
+                            {
+                                options.Version = PackageVersion.V7;
+                                break;
+                            }
                     }
-                    case 2:
+
+                    switch (compressionMethod.SelectedIndex)
                     {
-                        options.Version = PackageVersion.V10;
-                        break;
+                        case 1:
+                            {
+                                options.Compression = CompressionMethod.Zlib;
+                                break;
+                            }
+                        case 2:
+                            {
+                                options.Compression = CompressionMethod.Zlib;
+                                options.FastCompression = false;
+                                break;
+                            }
+                        case 3:
+                            {
+                                options.Compression = CompressionMethod.LZ4;
+                                break;
+                            }
+                        case 4:
+                            {
+                                options.Compression = CompressionMethod.LZ4;
+                                options.FastCompression = false;
+                                break;
+                            }
                     }
-                    case 3:
-                    {
-                        options.Version = PackageVersion.V9;
-                        break;
-                    }
-                    case 4:
-                    {
-                        options.Version = PackageVersion.V7;
-                        break;
-                    }
-                }
-                
-                switch (compressionMethod.SelectedIndex)
-                {
-                    case 1:
+
+                    // Fallback to Zlib, if the package version doesn't support LZ4
+                    if (options.Compression == CompressionMethod.LZ4 && options.Version <= PackageVersion.V9)
                     {
                         options.Compression = CompressionMethod.Zlib;
-                        break;
                     }
-                    case 2:
+
+                    if (solid.Checked)
                     {
-                        options.Compression = CompressionMethod.Zlib;
-                        options.FastCompression = false;
-                        break;
+                        options.Flags |= PackageFlags.Solid;
                     }
-                    case 3:
+
+                    if (allowMemoryMapping.Checked)
                     {
-                        options.Compression = CompressionMethod.LZ4;
-                        break;
+                        options.Flags |= PackageFlags.AllowMemoryMapping;
                     }
-                    case 4:
+
+                    if (preloadIntoCache.Checked)
                     {
-                        options.Compression = CompressionMethod.LZ4;
-                        options.FastCompression = false;
-                        break;
+                        options.Flags |= PackageFlags.Preload;
                     }
-                }
 
-                // Fallback to Zlib, if the package version doesn't support LZ4
-                if (options.Compression == CompressionMethod.LZ4 && options.Version <= PackageVersion.V9)
+                    options.Priority = (byte)packagePriority.Value;
+
+                    var packager = new Packager();
+                    packager.ProgressUpdate += PackageProgressUpdate;
+                    packager.CreatePackage(createPackagePath.Text, createSrcPath.Text, options);
+
+                    MessageBox.Show("Package created successfully.");
+                }
+                catch (Exception exc)
                 {
-                    options.Compression = CompressionMethod.Zlib;
+                    MessageBox.Show($"Internal error!{Environment.NewLine}{Environment.NewLine}{exc}", "Package Build Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
-
-                if (solid.Checked)
+                finally
                 {
-                    options.Flags |= PackageFlags.Solid;
+                    packageProgressLabel.Text = "";
+                    packageProgress.Value = 0;
+                    createPackageBtn.Enabled = true;
                 }
-
-                if (allowMemoryMapping.Checked)
-                {
-                    options.Flags |= PackageFlags.AllowMemoryMapping;
-                }
-
-                if (preloadIntoCache.Checked)
-                {
-                    options.Flags |= PackageFlags.Preload;
-                }
-
-                options.Priority = (byte)packagePriority.Value;
-
-                var packager = new Packager();
-                packager.ProgressUpdate += PackageProgressUpdate;
-                packager.CreatePackage(createPackagePath.Text, createSrcPath.Text, options);
-
-                MessageBox.Show("Package created successfully.");
-            }
-            catch (Exception exc)
-            {
-                MessageBox.Show($"Internal error!{Environment.NewLine}{Environment.NewLine}{exc}", "Package Build Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            finally
-            {
-                packageProgressLabel.Text = "";
-                packageProgress.Value = 0;
-                createPackageBtn.Enabled = true;
             }
         }
 

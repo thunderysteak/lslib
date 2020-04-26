@@ -30,18 +30,25 @@ namespace ConverterApp
 
         private void resourceConvertBtn_Click(object sender, EventArgs e)
         {
-            try
+            if (String.IsNullOrEmpty(resourceInputPath.Text) || String.IsNullOrEmpty(resourceOutputPath.Text))
             {
-                _resource = ResourceUtils.LoadResource(resourceInputPath.Text);
-                ResourceFormat format = ResourceUtils.ExtensionToResourceFormat(resourceOutputPath.Text);
-                FileVersion outputVersion = _form.GetGame().IsDOS2() ? FileVersion.VerExtendedNodes : FileVersion.VerChunkedCompress;
-                ResourceUtils.SaveResource(_resource, resourceOutputPath.Text, format, outputVersion);
-
-                MessageBox.Show("Resource saved successfully.");
+                MessageBox.Show("Please specify both input and output file path first!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
-            catch (Exception exc)
+            else
             {
-                MessageBox.Show($"Internal error!{Environment.NewLine}{Environment.NewLine}{exc}", "Conversion Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                try
+                {
+                    _resource = ResourceUtils.LoadResource(resourceInputPath.Text);
+                    ResourceFormat format = ResourceUtils.ExtensionToResourceFormat(resourceOutputPath.Text);
+                    FileVersion outputVersion = _form.GetGame().IsDOS2() ? FileVersion.VerExtendedNodes : FileVersion.VerChunkedCompress;
+                    ResourceUtils.SaveResource(_resource, resourceOutputPath.Text, format, outputVersion);
+
+                    MessageBox.Show("Resource saved successfully.");
+                }
+                catch (Exception exc)
+                {
+                    MessageBox.Show($"Internal error!{Environment.NewLine}{Environment.NewLine}{exc}", "Conversion Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
         }
 
@@ -80,84 +87,91 @@ namespace ConverterApp
         public void ResourceProgressUpdate(string status, long numerator, long denominator)
         {
             resourceProgressLabel.Text = status;
-            resourceConversionProgress.Value = denominator == 0 ? 0 : (int) (numerator * 100 / denominator);
+            resourceConversionProgress.Value = denominator == 0 ? 0 : (int)(numerator * 100 / denominator);
 
             Application.DoEvents();
         }
 
         private void resourceBulkConvertBtn_Click(object sender, EventArgs e)
         {
-            var inputFormat = ResourceFormat.LSX;
-            switch (resourceInputFormatCb.SelectedIndex)
+            if (String.IsNullOrEmpty(resourceInputDir.Text) || String.IsNullOrEmpty(resourceOutputDir.Text))
             {
-                case 0:
-                {
-                    inputFormat = ResourceFormat.LSX;
-                    break;
-                }
-                case 1:
-                {
-                    inputFormat = ResourceFormat.LSB;
-                    break;
-                }
-                case 2:
-                {
-                    inputFormat = ResourceFormat.LSF;
-                    break;
-                }
-                case 3:
-                {
-                    inputFormat = ResourceFormat.LSJ;
-                    break;
-                }
+                MessageBox.Show("Please specify both input and output file path first!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
-
-            var outputFormat = ResourceFormat.LSF;
-            FileVersion outputVersion = 0x0;
-
-            switch (resourceOutputFormatCb.SelectedIndex)
+            else
             {
-                case 0:
+                var inputFormat = ResourceFormat.LSX;
+                switch (resourceInputFormatCb.SelectedIndex)
                 {
-                    outputFormat = ResourceFormat.LSX;
-                    break;
+                    case 0:
+                        {
+                            inputFormat = ResourceFormat.LSX;
+                            break;
+                        }
+                    case 1:
+                        {
+                            inputFormat = ResourceFormat.LSB;
+                            break;
+                        }
+                    case 2:
+                        {
+                            inputFormat = ResourceFormat.LSF;
+                            break;
+                        }
+                    case 3:
+                        {
+                            inputFormat = ResourceFormat.LSJ;
+                            break;
+                        }
                 }
-                case 1:
-                {
-                    outputFormat = ResourceFormat.LSB;
-                    break;
-                }
-                case 2:
-                {
-                    outputFormat = ResourceFormat.LSF;
-                    outputVersion = _form.GetGame().IsDOS2() ? FileVersion.VerExtendedNodes : FileVersion.VerChunkedCompress;
-                    break;
-                }
-                case 3:
-                {
-                    outputFormat = ResourceFormat.LSJ;
-                    break;
-                }
-            }
 
-            try
-            {
-                resourceConvertBtn.Enabled = false;
-                var utils = new ResourceUtils();
-                utils.progressUpdate += ResourceProgressUpdate;
-                utils.ConvertResources(resourceInputDir.Text, resourceOutputDir.Text, inputFormat, outputFormat, outputVersion);
+                var outputFormat = ResourceFormat.LSF;
+                FileVersion outputVersion = 0x0;
 
-                MessageBox.Show("Resources converted successfully.");
-            }
-            catch (Exception exc)
-            {
-                MessageBox.Show($"Internal error!{Environment.NewLine}{Environment.NewLine}{exc}", "Conversion Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            finally
-            {
-                resourceProgressLabel.Text = "";
-                resourceConversionProgress.Value = 0;
-                resourceConvertBtn.Enabled = true;
+                switch (resourceOutputFormatCb.SelectedIndex)
+                {
+                    case 0:
+                        {
+                            outputFormat = ResourceFormat.LSX;
+                            break;
+                        }
+                    case 1:
+                        {
+                            outputFormat = ResourceFormat.LSB;
+                            break;
+                        }
+                    case 2:
+                        {
+                            outputFormat = ResourceFormat.LSF;
+                            outputVersion = _form.GetGame().IsDOS2() ? FileVersion.VerExtendedNodes : FileVersion.VerChunkedCompress;
+                            break;
+                        }
+                    case 3:
+                        {
+                            outputFormat = ResourceFormat.LSJ;
+                            break;
+                        }
+                }
+
+                try
+                {
+                    resourceConvertBtn.Enabled = false;
+                    var utils = new ResourceUtils();
+                    utils.progressUpdate += ResourceProgressUpdate;
+                    utils.ConvertResources(resourceInputDir.Text, resourceOutputDir.Text, inputFormat, outputFormat, outputVersion);
+
+                    MessageBox.Show("Resources converted successfully.");
+                }
+                catch (Exception exc)
+                {
+                    MessageBox.Show($"Internal error!{Environment.NewLine}{Environment.NewLine}{exc}", "Conversion Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                finally
+                {
+                    resourceProgressLabel.Text = "";
+                    resourceConversionProgress.Value = 0;
+                    resourceConvertBtn.Enabled = true;
+                }
             }
         }
     }

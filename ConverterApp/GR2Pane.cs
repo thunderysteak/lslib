@@ -316,18 +316,24 @@ namespace ConverterApp
         private void loadInputBtn_Click(object sender, EventArgs e)
         {
             string nl = Environment.NewLine;
-
-            try
+            if (String.IsNullOrEmpty(inputPath.Text))
             {
-                LoadFile(inputPath.Text);
+                MessageBox.Show("Please specify input file path first!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
-            catch (ParsingException exc)
+            else
             {
-                MessageBox.Show($"Import failed!{nl}{nl}{exc.Message}", "Import Failed");
-            }
-            catch (Exception exc)
-            {
-                MessageBox.Show($"Internal error!{nl}{nl}{exc}", "Import Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                try
+                {
+                    LoadFile(inputPath.Text);
+                }
+                catch (ParsingException exc)
+                {
+                    MessageBox.Show($"Import failed!{nl}{nl}{exc.Message}", "Import Failed");
+                }
+                catch (Exception exc)
+                {
+                    MessageBox.Show($"Internal error!{nl}{nl}{exc}", "Import Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
         }
 
@@ -356,23 +362,32 @@ namespace ConverterApp
 
         private void saveOutputBtn_Click(object sender, EventArgs e)
         {
-            var exporter = new Exporter();
-            UpdateExporterSettings(exporter.Options);
-            lastExporterSettings = exporter.Options;
-#if !DEBUG
-            try
+            if (String.IsNullOrEmpty(outputPath.Text))
             {
-#endif
+                //
+                MessageBox.Show("Please specify output file path first!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+            else
+            {
+                var exporter = new Exporter();
+                UpdateExporterSettings(exporter.Options);
+                lastExporterSettings = exporter.Options;
+
+                #if !DEBUG
+                            try
+                            {
+                #endif
                 exporter.Export();
 
                 MessageBox.Show("Export completed successfully.");
-#if !DEBUG
+                #if !DEBUG
+                            }
+                            catch (Exception exc)
+                            {
+                                GR2ConversionError(exporter.Options.InputPath, exporter.Options.OutputPath, exc);
+                            }
+                #endif
             }
-            catch (Exception exc)
-            {
-                GR2ConversionError(exporter.Options.InputPath, exporter.Options.OutputPath, exc);
-            }
-#endif
         }
 
         private void GR2BatchInputBrowseBtn_Click(object sender, EventArgs e)

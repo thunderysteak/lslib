@@ -95,37 +95,44 @@ namespace ConverterApp
 
         private void loadStoryBtn_Click(object sender, EventArgs e)
         {
-            string extension = Path.GetExtension(storyFilePath.Text)?.ToLower();
-
-            switch (extension)
+            if (String.IsNullOrEmpty(storyFilePath.Text))
             {
-                case ".lsv":
+                MessageBox.Show("Please specify Story/Savegame file path first!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+            else
+            {
+                string extension = Path.GetExtension(storyFilePath.Text)?.ToLower();
+
+                switch (extension)
                 {
-                    var resource = LoadResourceFromSave(storyFilePath.Text);
-                    if (resource == null) return;
+                    case ".lsv":
+                        {
+                            var resource = LoadResourceFromSave(storyFilePath.Text);
+                            if (resource == null) return;
 
-                    LSLib.LS.Node storyNode = resource.Regions["Story"].Children["Story"][0];
-                    var storyStream = new MemoryStream(storyNode.Attributes["Story"].Value as byte[] ?? throw new InvalidOperationException("Cannot proceed with null Story node"));
+                            LSLib.LS.Node storyNode = resource.Regions["Story"].Children["Story"][0];
+                            var storyStream = new MemoryStream(storyNode.Attributes["Story"].Value as byte[] ?? throw new InvalidOperationException("Cannot proceed with null Story node"));
 
-                    LoadStory(storyStream);
+                            LoadStory(storyStream);
 
-                    MessageBox.Show("Save game database loaded successfully.");
-                    break;
-                }
-                case ".osi":
-                {
-                    using (var file = new FileStream(storyFilePath.Text, FileMode.Open, FileAccess.Read, FileShare.Read))
-                    {
-                        LoadStory(file);
-                    }
+                            MessageBox.Show("Save game database loaded successfully.");
+                            break;
+                        }
+                    case ".osi":
+                        {
+                            using (var file = new FileStream(storyFilePath.Text, FileMode.Open, FileAccess.Read, FileShare.Read))
+                            {
+                                LoadStory(file);
+                            }
 
-                    MessageBox.Show("Story file loaded successfully.");
-                    break;
-                }
-                default:
-                {
-                    MessageBox.Show($"Unsupported file extension: {extension}", "Load Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    break;
+                            MessageBox.Show("Story file loaded successfully.");
+                            break;
+                        }
+                    default:
+                        {
+                            MessageBox.Show($"Unsupported file extension: {extension}", "Load Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            break;
+                        }
                 }
             }
         }
@@ -257,52 +264,59 @@ namespace ConverterApp
 
         private void decompileStoryBtn_Click(object sender, EventArgs e)
         {
-            if (_story == null)
+            if (String.IsNullOrEmpty(goalPath.Text))
             {
-                MessageBox.Show("A story file must be loaded before exporting.", "Story export failed", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
+                MessageBox.Show("Please specify output file path first!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
-
-            string debugPath = Path.Combine(goalPath.Text, "debug.log");
-            using (var debugFile = new FileStream(debugPath, FileMode.Create, FileAccess.Write))
+            else
             {
-                using (var writer = new StreamWriter(debugFile))
+                if (_story == null)
                 {
-                    _story.DebugDump(writer);
+                    MessageBox.Show("A story file must be loaded before exporting.", "Story export failed", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
                 }
-            }
 
-            string unassignedPath = Path.Combine(goalPath.Text, "UNASSIGNED_RULES.txt");
-            using (var goalFile = new FileStream(unassignedPath, FileMode.Create, FileAccess.Write))
-            {
-                using (var writer = new StreamWriter(goalFile))
+                string debugPath = Path.Combine(goalPath.Text, "debug.log");
+                using (var debugFile = new FileStream(debugPath, FileMode.Create, FileAccess.Write))
                 {
-                    var dummyGoal = new Goal(_story)
+                    using (var writer = new StreamWriter(debugFile))
                     {
-                        ExitCalls = new List<Call>(),
-                        InitCalls = new List<Call>(),
-                        ParentGoals = new List<GoalReference>(),
-                        SubGoals = new List<GoalReference>(),
-                        Name = "UNASSIGNED_RULES",
-                        Index = 0
-                    };
-                    dummyGoal.MakeScript(writer, _story);
+                        _story.DebugDump(writer);
+                    }
                 }
-            }
 
-            foreach (KeyValuePair<uint, Goal> goal in _story.Goals)
-            {
-                string filePath = Path.Combine(goalPath.Text, $"{goal.Value.Name}.txt");
-                using (var goalFile = new FileStream(filePath, FileMode.Create, FileAccess.Write))
+                string unassignedPath = Path.Combine(goalPath.Text, "UNASSIGNED_RULES.txt");
+                using (var goalFile = new FileStream(unassignedPath, FileMode.Create, FileAccess.Write))
                 {
                     using (var writer = new StreamWriter(goalFile))
                     {
-                        goal.Value.MakeScript(writer, _story);
+                        var dummyGoal = new Goal(_story)
+                        {
+                            ExitCalls = new List<Call>(),
+                            InitCalls = new List<Call>(),
+                            ParentGoals = new List<GoalReference>(),
+                            SubGoals = new List<GoalReference>(),
+                            Name = "UNASSIGNED_RULES",
+                            Index = 0
+                        };
+                        dummyGoal.MakeScript(writer, _story);
                     }
                 }
-            }
 
-            MessageBox.Show("Story unpacked successfully.");
+                foreach (KeyValuePair<uint, Goal> goal in _story.Goals)
+                {
+                    string filePath = Path.Combine(goalPath.Text, $"{goal.Value.Name}.txt");
+                    using (var goalFile = new FileStream(filePath, FileMode.Create, FileAccess.Write))
+                    {
+                        using (var writer = new StreamWriter(goalFile))
+                        {
+                            goal.Value.MakeScript(writer, _story);
+                        }
+                    }
+                }
+
+                MessageBox.Show("Story unpacked successfully.");
+            }
         }
 
         private void databaseSelectorCb_SelectedIndexChanged(object sender, EventArgs e)
@@ -326,11 +340,27 @@ namespace ConverterApp
 
         private void btnDebugExport_Click(object sender, EventArgs e)
         {
-            string filePath = Path.Combine(goalPath.Text, "debug.json");
-            using (var debugFileStream = new FileStream(filePath, FileMode.Create))
+            //I'm not sure if this function also relies on the same goalPath textbox. 
+            //If it doesn't, please remove the ifelse statement and keep the catch function as it was missing and causing a crash.
+            if (String.IsNullOrEmpty(goalPath.Text))
             {
-                var sev = new StoryDebugExportVisitor(debugFileStream);
-                sev.Visit(_story);
+                MessageBox.Show("Please specify output file path first!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+            else
+            {
+                try
+                {
+                    string filePath = Path.Combine(goalPath.Text, "debug.json");
+                    using (var debugFileStream = new FileStream(filePath, FileMode.Create))
+                    {
+                        var sev = new StoryDebugExportVisitor(debugFileStream);
+                        sev.Visit(_story);
+                    }
+                }
+                catch (Exception exc)
+                {
+                    MessageBox.Show($"Internal error!{exc}", "Export Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
         }
     }
