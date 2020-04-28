@@ -106,9 +106,13 @@ namespace LSLib.Granny.Model
                 var v2 = vert2.Position;
                 var v3 = vert3.Position;
 
-                var w1 = vert1.TextureCoordinates0;
-                var w2 = vert2.TextureCoordinates0;
-                var w3 = vert3.TextureCoordinates0;
+                var w1 = vert1.TextureCoordinates0 + vert1.TextureCoord0;
+                var w2 = vert2.TextureCoordinates0 + vert2.TextureCoord0;
+                var w3 = vert3.TextureCoordinates0 + vert3.TextureCoord0;
+
+                //var w1 = vert1.TextureCoord0;   //Changed for ESO! TextureCoordinates to TextureCoord
+                //var w2 = vert2.TextureCoord0;  //Changed for ESO! TextureCoordinates to TextureCoord
+                //var w3 = vert3.TextureCoord0;  //Changed for ESO! TextureCoordinates to TextureCoord
 
                 float x1 = v2.X - v1.X;
                 float x2 = v3.X - v1.X;

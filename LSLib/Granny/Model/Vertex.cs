@@ -49,6 +49,7 @@ namespace LSLib.Granny.Model
     public enum NormalType
     {
         None,
+        Half2,
         Float3,
         Half4,
         QTangent
@@ -169,6 +170,11 @@ namespace LSLib.Granny.Model
                     attributeCounts += "4";
                     break;
 
+                case NormalType.Half2:
+                    vertexFormat += "HN";
+                    attributeCounts += "2";
+                    break;
+
                 case NormalType.QTangent:
                     vertexFormat += "QN";
                     attributeCounts += "4";
@@ -277,10 +283,14 @@ namespace LSLib.Granny.Model
         public Vector3 Binormal;
         public Vector4 Color0;
         public Vector4 Color1;
-        public Vector2 TextureCoordinates0;
-        public Vector2 TextureCoordinates1;
-        public Vector2 TextureCoordinates2;
-        public Vector2 TextureCoordinates3;
+        public Vector2 TextureCoordinates0; 
+        public Vector2 TextureCoordinates1;  
+        public Vector2 TextureCoordinates2;  
+        public Vector2 TextureCoordinates3;  
+        public Vector2 TextureCoord0;   //Changed for ESO! TextureCoordinates to TextureCoord
+        public Vector2 TextureCoord1;  //Changed for ESO! TextureCoordinates to TextureCoord
+        public Vector2 TextureCoord2;  //Changed for ESO! TextureCoordinates to TextureCoord
+        public Vector2 TextureCoord3;  //Changed for ESO! TextureCoordinates to TextureCoord
 
         protected Vertex() { }
 
@@ -288,10 +298,14 @@ namespace LSLib.Granny.Model
         {
             switch (index)
             {
-                case 0: return TextureCoordinates0;
-                case 1: return TextureCoordinates1;
-                case 2: return TextureCoordinates2;
-                case 3: return TextureCoordinates3;
+                case 0: return TextureCoordinates0;  
+                case 1: return TextureCoordinates1; 
+                case 2: return TextureCoordinates2;  
+                case 3: return TextureCoordinates3;       
+                case 4: return TextureCoord0;  //Changed for ESO! TextureCoordinates to TextureCoord
+                case 5: return TextureCoord1;  //Changed for ESO! TextureCoordinates to TextureCoord
+                case 6: return TextureCoord2;  //Changed for ESO! TextureCoordinates to TextureCoord
+                case 7: return TextureCoord3;  //Changed for ESO! TextureCoordinates to TextureCoord
                 default: throw new ArgumentException($"At most {MaxUVs} UVs are supported.");
             }
         }
@@ -304,6 +318,10 @@ namespace LSLib.Granny.Model
                 case 1: TextureCoordinates1 = uv; break;
                 case 2: TextureCoordinates2 = uv; break;
                 case 3: TextureCoordinates3 = uv; break;
+                case 4: TextureCoord0 = uv; break;   //Changed for ESO! TextureCoordinates to TextureCoord
+                case 5: TextureCoord1 = uv; break;  //Changed for ESO! TextureCoordinates to TextureCoord
+                case 6: TextureCoord2 = uv; break;  //Changed for ESO! TextureCoordinates to TextureCoord
+                case 7: TextureCoord3 = uv; break;  //Changed for ESO! TextureCoordinates to TextureCoord
                 default: throw new ArgumentException($"At most {MaxUVs} UVs are supported.");
             }
         }
@@ -443,6 +461,11 @@ namespace LSLib.Granny.Model
                         {
                             desc.NormalType = NormalType.Half4;
                         }
+                        //ES:O Compatibility
+                        else if (member.Type == MemberType.Real16 && member.ArraySize == 2)
+                        {
+                            desc.NormalType = NormalType.Half2;
+                        }
                         else
                         {
                             throw new Exception($"Unsupported normal format: {member.Type}, {member.ArraySize}");
@@ -471,6 +494,11 @@ namespace LSLib.Granny.Model
                         {
                             desc.NormalType = NormalType.Half4;
                         }
+                        //ES:O Compatibility
+                        else if (member.Type == MemberType.Real16 && member.ArraySize == 2)
+                        {
+                            desc.NormalType = NormalType.Half2;
+                        }
                         else
                         {
                             throw new Exception($"Unsupported tangent format: {member.Type}, {member.ArraySize}");
@@ -485,6 +513,11 @@ namespace LSLib.Granny.Model
                         else if (member.Type == MemberType.Real16 && member.ArraySize == 4)
                         {
                             desc.NormalType = NormalType.Half4;
+                        }
+                        //ES:O Compatibility
+                        else if (member.Type == MemberType.Real16 && member.ArraySize == 2)
+                        {
+                            desc.NormalType = NormalType.Half2;
                         }
                         else
                         {
@@ -515,9 +548,13 @@ namespace LSLib.Granny.Model
                         break;
 
                     case "TextureCoordinates0":
-                    case "TextureCoordinates1":
-                    case "TextureCoordinates2":
-                    case "TextureCoordinates3":
+                    case "TextureCoordinates1":  
+                    case "TextureCoordinates2":  
+                    case "TextureCoordinates3":  
+                    case "TextureCoord0":  //Changed for ESO! TextureCoordinates to TextureCoord
+                    case "TextureCoord1":  //Changed for ESO! TextureCoordinates to TextureCoord
+                    case "TextureCoord2":  //Changed for ESO! TextureCoordinates to TextureCoord
+                    case "TextureCoord3":  //Changed for ESO! TextureCoordinates to TextureCoord
                         desc.TextureCoordinates++;
                         if (member.Type == MemberType.Real32 && member.ArraySize == 2)
                         {
